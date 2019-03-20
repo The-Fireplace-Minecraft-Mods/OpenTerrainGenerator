@@ -52,7 +52,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import java.io.File;
 
 //@Mod(modid = "openterraingenerator", name = "Open Terrain Generator", acceptableRemoteVersions = "*", version = "v2", certificateFingerprint = "e9f7847a78c5342af5b0a9e04e5abc0b554d69e0")
-@Mod(modid = "openterraingenerator", name = "Open Terrain Generator", version = "v6", certificateFingerprint = "e9f7847a78c5342af5b0a9e04e5abc0b554d69e0")
+@Mod(modid = "openterraingenerator", name = "Open Terrain Generator", version = "v6", certificateFingerprint = "e9f7847a78c5342af5b0a9e04e5abc0b554d69e0", acceptableRemoteVersions = "*")
 public class OTGPlugin
 {
 	public static final String MOD_ID = "openterraingenerator";
@@ -126,28 +126,23 @@ public class OTGPlugin
         MinecraftForge.EVENT_BUS.register(new UnloadServerHandler());
 
         // Register colorizer, for biome colors
-        Function<Biome, BiomeConfig> getBiomeConfig = new Function<Biome, BiomeConfig>()
-        {
-            @Override
-            public BiomeConfig apply(Biome input)
+        Function<Biome, BiomeConfig> getBiomeConfig = input -> {
+            LocalBiome biome = null;
+            try
             {
-                LocalBiome biome = null;
-                try
-                {
-                	biome = OTG.getBiomeAllWorlds(input.biomeName);
-                }
-                catch (BiomeNotFoundException e)
-                {
-                    // Ignored, try in next world
-                }
-
-                if (biome == null)
-                {
-                    return null;
-                }
-
-                return biome.getBiomeConfig();
+                biome = OTG.getBiomeAllWorlds(input.biomeName);
             }
+            catch (BiomeNotFoundException e)
+            {
+                // Ignored, try in next world
+            }
+
+            if (biome == null)
+            {
+                return null;
+            }
+
+            return biome.getBiomeConfig();
         };
 
         MinecraftForge.EVENT_BUS.register(new BiomeColorsListener(getBiomeConfig));

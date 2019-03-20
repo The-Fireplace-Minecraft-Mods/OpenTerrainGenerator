@@ -49,161 +49,29 @@ public class OTGDimensionManager
 {
 	public static boolean isDimensionNameRegistered(String dimensionName)
 	{
-		if(dimensionName.equals("overworld"))
-		{
-			return true;
-		}
-		for(int i = -1000; i < Long.SIZE << 4; i++) // -1000 For other mods that add dimensions with id's below zero, hopefully -1000 is enough..
-		{
-			if(DimensionManager.isDimensionRegistered(i))
-			{
-				DimensionType dimensionType = DimensionManager.getProviderType(i);
-
-				if(dimensionType.getSuffix() != null && dimensionType.getSuffix().equals("OTG") && dimensionType.getName().equals(dimensionName))
-				{
-    				return true;
-				}
-			}
-		}
 		return false;
 	}
 
 	public static void registerDimension(int id, DimensionType type)
 	{
-		DimensionManager.registerDimension(id, type);
 
-        NBTTagCompound compound = new NBTTagCompound();
-        compound.setInteger("dimensionID", id);
-        ArrayList<String> types = new ArrayList<String>();
-        types.add("OPEN_TERRAIN_GENERATOR");
-        writeNBTStrings("types", types, compound);
-        FMLInterModComms.sendMessage(OTGPlugin.MOD_ID, "registerDimension", compound);
 	}
 
     public static void unregisterDimension(int dimensionId)
     {
-    	if(dimensionId == 0)
-    	{
-    		return; // Never unregister the overworld
-    	}
 
-    	DimensionManager.unregisterDimension(dimensionId);
-
-        NBTTagCompound compound = new NBTTagCompound();
-        compound.setInteger("dimensionID", dimensionId);
-
-        ArrayList<String> types = new ArrayList<String>();
-        types.add("OPEN_TERRAIN_GENERATOR");
-        writeNBTStrings("types", types, compound);
-
-        FMLInterModComms.sendMessage(OTGPlugin.MOD_ID, "unregisterDimension", compound);
-    }
-
-    public static void writeNBTStrings(String id, Collection<String> strings, NBTTagCompound compound)
-    {
-        if (strings != null)
-        {
-            NBTTagList nbtTagList = new NBTTagList();
-
-            for (String s : strings)
-                nbtTagList.appendTag(new NBTTagString(s));
-
-            compound.setTag(id, nbtTagList);
-        }
     }
 
 	static HashMap<Integer,Integer> dimensionsOrder;
 
 	public static int createDimension(String dimensionName, boolean keepLoaded, boolean initDimension, boolean saveDimensionData)
 	{
-		int newDimId = DimensionManager.getNextFreeDimId();
-
-		registerDimension(newDimId, DimensionType.register(dimensionName, "OTG", newDimId, WorldProviderOTG.class, keepLoaded));
-		if(initDimension)
-		{
-			initDimension(newDimId, dimensionName);
-		}
-
-		int maxOrder = -1;
-		for(Integer dimOrder : dimensionsOrder.values())
-		{
-			if(dimOrder > maxOrder)
-			{
-				maxOrder = dimOrder;
-			}
-		}
-		dimensionsOrder.put(newDimId, maxOrder + 1);
-
-		if(saveDimensionData)
-		{
-			SaveDimensionData();
-		}
-
-		return newDimId;
+		return 0;
 	}
 
 	public static void DeleteDimension(int dimToRemove, ForgeWorld world, MinecraftServer server, boolean saveDimensionData)
 	{
-		if(DimensionManager.getWorld(dimToRemove) != null) // Can be null on the client if the world was unloaded(?)
-		{
-			DimensionManager.setWorld(dimToRemove, null, server);
-		}
-		if(DimensionManager.isDimensionRegistered(dimToRemove))
-		{
-			OTGDimensionManager.unregisterDimension(dimToRemove);
-		}
 
-		world.unRegisterBiomes();
-
-		((ForgeEngine)OTG.getEngine()).getWorldLoader().RemoveUnloadedWorld(world.getName());
-
-		// Client side only
-		((ForgeEngine)OTG.getEngine()).getWorldLoader().RemoveLoadedWorld(world.getName());
-
-		OTGDimensionManager.UnloadCustomDimensionData(dimToRemove);
-
-		world.DeleteWorldSessionData();
-
-		BitSet dimensionMap = null;
-		try {
-			Field[] fields = DimensionManager.class.getDeclaredFields();
-			for(Field field : fields)
-			{
-				Class<?> fieldClass = field.getType();
-				if(fieldClass.equals(BitSet.class))
-				{
-					field.setAccessible(true);
-					dimensionMap = (BitSet) field.get(new DimensionManager());
-			        break;
-				}
-			}
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
-
-		dimensionMap.clear(dimToRemove);
-
-		if(saveDimensionData)
-		{
-			// This biome was unregistered via a console command, delete its world data
-			File dimensionSaveDir = new File(world.getWorld().getSaveHandler().getWorldDirectory() + "/DIM" + dimToRemove);
-			if(dimensionSaveDir.exists() && dimensionSaveDir.isDirectory())
-			{
-				OTG.log(LogMarker.INFO, "Deleting world save data for dimension " + dimToRemove);
-				try {
-					FileUtils.deleteDirectory(dimensionSaveDir);
-				} catch (IOException e) {
-					OTG.log(LogMarker.ERROR, "Could not delete directory: " + e.toString());
-					e.printStackTrace();
-				}
-			}
-
-			SaveDimensionData();
-		}
 	}
 
     private static void initDimension(int dim, String dimensionName)
@@ -248,10 +116,10 @@ public class OTGDimensionManager
 		}
         if(forgeWorld != null) // forgeWorld can be null for a dimension with a vanilla world
         {
-	        ((ServerConfigProvider)forgeWorld.getConfigs()).getWorldConfig().worldSeed = "" + seedIn;
+	        forgeWorld.getConfigs().getWorldConfig().worldSeed = "" + seedIn;
 	        ((ServerConfigProvider)forgeWorld.getConfigs()).saveWorldConfig();
 
-        	WorldConfig worldConfig = ((ServerConfigProvider)forgeWorld.getConfigs()).getWorldConfig();
+        	WorldConfig worldConfig = forgeWorld.getConfigs().getWorldConfig();
 
 	        world.getGameRules().setOrCreateGameRule("commandBlockOutput", worldConfig.commandBlockOutput); // Whether command blocks should notify admins when they perform commands
     		world.getGameRules().setOrCreateGameRule("disableElytraMovementCheck", worldConfig.disableElytraMovementCheck); // Whether the server should skip checking player speed when the player is wearing elytra. Often helps with jittering due to lag in multiplayer, but may also be used to travel unfairly long distances in survival mode (cheating).
@@ -334,10 +202,7 @@ public class OTGDimensionManager
 						continue; // If another mod added a dimension
 					}
 
-					if(forgeWorld != null)
-					{
-						stringbuilder.append((stringbuilder.length() == 0 ? "" : ",") + i + "," + dimType.getName() + "," + dimType.shouldLoadSpawn() + "," + forgeWorld.getSeed() + "," + dimensionsOrder.get(i));
-					}
+					stringbuilder.append(stringbuilder.length() == 0 ? "" : ",").append(i).append(",").append(dimType.getName()).append(",").append(dimType.shouldLoadSpawn()).append(",").append(forgeWorld.getSeed()).append(",").append(dimensionsOrder.get(i));
 				}
 			}
 		}
@@ -366,7 +231,7 @@ public class OTGDimensionManager
 
 	public static void UnloadAllCustomDimensionData()
 	{
-		dimensionsOrder = new HashMap<Integer,Integer>();
+		dimensionsOrder = new HashMap<>();
 		dimensionsOrder.put(0,0);
 
 		BitSet dimensionMap = null;
@@ -675,6 +540,6 @@ public class OTGDimensionManager
 		{
 			dimensions.put(oldDim.getKey(), oldDim.getValue());
 		}
-		oldDims = new Hashtable<Integer, Object>();
+		oldDims = new Hashtable<>();
 	}
 }

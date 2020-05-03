@@ -579,7 +579,7 @@ public class OTGChunkGenerator implements IChunkGenerator
 	    	if(world.IsInsideWorldBorder(ChunkCoordinate.fromChunkCoords(chunkX, chunkZ), false))
 	        {
 	    		ChunkCoordinate chunkCoord = ChunkCoordinate.fromChunkCoords(chunkX, chunkZ);
-	    		chunkBuffer = new ForgeChunkBuffer(chunkCoord);
+				ForgeChunkBuffer chunkBuffer = this.chunkBuffer = new ForgeChunkBuffer(chunkCoord);
 	    		this.generator.generate(chunkBuffer);
 
 	    		// Before starting terrain generation MC tries to find a suitable spawn point. For some reason it looks for a grass block with an air block above it.
@@ -609,7 +609,7 @@ public class OTGChunkGenerator implements IChunkGenerator
 		        	chunk.generateSkylightMap(); // Normally chunks are lit in the ObjectSpawner after finishing their population step, TerrainTest skips the population step though so light blocks here.
 		        }
 
-		        chunkBuffer = null;
+		        this.chunkBuffer = null;
 	        }
     	} else {
         	if(world.IsInsideWorldBorder(ChunkCoordinate.fromChunkCoords(chunkX, chunkZ), false))

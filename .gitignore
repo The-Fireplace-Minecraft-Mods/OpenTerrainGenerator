@@ -73,3 +73,6 @@ Thumbs.db
 *.lock
 *.launch
 *.jar
+*.ipr
+
+*.iws
